@@ -15,7 +15,7 @@ INSERT INTO Osoba
 VALUES(2372,'Alena','Amplionova','',0101012104);
 
 INSERT INTO Osoba
-VALUES(3381,'Pan','Zakaznik','nejaky@mal.com',5211301112);
+VALUES(3381,'Pan','Zakaznik','nejaky@mail.com',5211301112);
 
 INSERT INTO Osoba
 VALUES(3382,'Pani','Zakaznikova','',5104178193);
