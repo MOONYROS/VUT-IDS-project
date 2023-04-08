@@ -66,7 +66,7 @@ CREATE TABLE Zames (
 CREATE TABLE Zakaznik (
     ID_zakaznik NUMBER(10, 0),
 	ID_zak NUMBER(10, 0),
-	zak_karta NUMBER(10, 0),
+	zak_karta VARCHAR2(4),
 	sleva VARCHAR2(10),
 	utrata FLOAT(10));
 
@@ -122,28 +122,76 @@ VALUES(3381,'Pan','Zakaznik','nejaky@mail.com', '521130/1112');
 INSERT INTO Osoba
 VALUES(3382,'Pani','Zakaznikova','', '510417/8193');
 
+INSERT INTO Osoba
+VALUES(3383,'Hans','Kezda','', '810329/4880');
+
+INSERT INTO Osoba
+VALUES(3384,'Jan','Neruda','trojuhelnik@pythagoras.com', '150930/0001');
+
+INSERT INTO Osoba
+VALUES(3385,'Karolina','Svetla','kaja@marik.cz', '351224/7894');
+
+INSERT INTO Osoba
+VALUES(3386,'Alena','424','Alena.Tesarova@vutbr.cz', '975525/8524');
+
+INSERT INTO Osoba
+VALUES(3387,'Martin','Omacht','martas.omachtu@gmail.com', '970812/6483');
+
+INSERT INTO Osoba
+VALUES(3388,'Tomas','Bari','', '020202/0202');
+
+INSERT INTO Osoba
+VALUES(2373,'Ricardo','Milos','lf@gf.tf', '851111/1111');
+
+INSERT INTO Osoba
+VALUES(2374,'Roman','Plachetka','romanek@plachtim.pl', '000101/0101');
+
 -- Zamestnanci
 INSERT INTO Zames
-VALUES(0001, 2341,'reditel',100000,777888999,'HPP');
+VALUES(0001, 2341,'reditel', 100000, 777888999, 'HPP');
 
 INSERT INTO Zames
-VALUES(0002, 2351,'vedouci',50000,859876231,'HPP');
+VALUES(0002, 2351, 'vedouci', 50000, 859876231, 'HPP');
 
 INSERT INTO Zames
-VALUES(0003, 2361,'skladnik',40000,958858758,'DPP');
+VALUES(0003, 2361, 'skladnik', 40000, 958858758, 'DPP');
 
 INSERT INTO Zames
-VALUES(0004,2371,'pokladni',25000,'','HPP');
+VALUES(0004,2371, 'pokladni', 25000, '', 'HPP');
 
 INSERT INTO Zames
-VALUES(0005, 2372,'pokladni',25000,999888555,'DPP');
+VALUES(0005, 2372, 'pokladni', 25000, 999888555, 'DPP');
+
+INSERT INTO Zames
+VALUES(0006, 2373, 'pokladni', 25000, 111111111, 'DPP');
+
+INSERT INTO Zames
+VALUES(0007, 2374, 'spravce_site', 17300, '', 'HPP');
 
 -- Zakaznici
 INSERT INTO Zakaznik
-VALUES(1000, 3381,'','0%',61256.55);
+VALUES(1000, 3381,'NE','0%', 61256.55);
 
 INSERT INTO Zakaznik
-VALUES(2000, 3382,0004585,'10%',154282.64);
+VALUES(2000, 3382, 'ANO','10%', 154282.64);
+
+INSERT INTO Zakaznik
+VALUES(3000, 3383, 'ANO','4%', 21456.00);
+
+INSERT INTO Zakaznik
+VALUES(4000, 3384, 'ANO','8%', 35000.00);
+
+INSERT INTO Zakaznik
+VALUES(5000, 3385, 'NE','0%', 2800.00);
+
+INSERT INTO Zakaznik
+VALUES(6000, 3386, 'NE','1%', 1500.00);
+
+INSERT INTO Zakaznik
+VALUES(7000, 3387, 'ANO','40%', 154282.64);
+
+INSERT INTO Zakaznik
+VALUES(8000, 3388, 'NE','0%', 10.90);
 
 -- Pokladny
 INSERT INTO Pokladna
@@ -151,6 +199,9 @@ VALUES(1, 2371, 50000);
 
 INSERT INTO Pokladna
 VALUES(2, 2372, 50000);
+
+INSERT INTO Pokladna
+VALUES(3, 2373, 50000);
 
 -- Zbozi
 INSERT INTO Zbozi
@@ -164,6 +215,24 @@ VALUES(1003, 2, 'pivo', 'Pivovar a.s.');
 
 INSERT INTO Zbozi
 VALUES(1004, '', 'rum', 'Rumovar s.r.o');
+
+INSERT INTO Zbozi
+VALUES(1005, 3, 'svestky', 'Sady s.r.o');
+
+INSERT INTO Zbozi
+VALUES(1006, 3, 'Sejvovice', 'Rumovar s.r.o');
+
+INSERT INTO Zbozi
+VALUES(1007, 1, 'Handlovane Hennessy', 'Dobre Piticko a.s.');
+
+INSERT INTO Zbozi
+VALUES(1008, 3, 'banany', 'Lidl');
+
+INSERT INTO Zbozi
+VALUES(1009, 2, 'kokosy', 'Palmy s.r.o');
+
+INSERT INTO Zbozi
+VALUES(1010, '', 'Malibu', 'Dobre Piticko a.s.');
 
 -- Objednavky a faktury
 INSERT INTO Objednavka
@@ -186,5 +255,85 @@ VALUES(auto_num.nextval, 1003, 2361, 10500);
 INSERT INTO Faktura
 VALUES(auto_num.currval, 'kartou');
 
+INSERT INTO Objednavka
+VALUES(auto_num.nextval, 1003, 2361, 20000);
+INSERT INTO Faktura
+VALUES(auto_num.currval, 'kartou');
+
+INSERT INTO Objednavka
+VALUES(auto_num.nextval, 1003, 2361, 14000);
+INSERT INTO Faktura
+VALUES(auto_num.currval, 'hotove');
+
+INSERT INTO Objednavka
+VALUES(auto_num.nextval, 1005, 3386, 150);
+INSERT INTO Faktura
+VALUES(auto_num.currval, 'prevodem');
+
+INSERT INTO Objednavka
+VALUES(auto_num.nextval, 1006, '', 35000);
+INSERT INTO Faktura
+VALUES(auto_num.currval, 'hotove');
+
+INSERT INTO Objednavka
+VALUES(auto_num.nextval, 1007, 3386, 899);
+INSERT INTO Faktura
+VALUES(auto_num.currval, 'kartou');
+
+INSERT INTO Objednavka
+VALUES(auto_num.nextval, 1008, 2361, 20000);
+INSERT INTO Faktura
+VALUES(auto_num.currval, 'kartou');
+
+INSERT INTO Objednavka
+VALUES(auto_num.nextval, 1009, 3382, 10000);
+INSERT INTO Faktura
+VALUES(auto_num.currval, 'hotove');
+
+INSERT INTO Objednavka
+VALUES(auto_num.nextval, 1010, 3381, 25000);
+INSERT INTO Faktura
+VALUES(auto_num.currval, 'kartou');
+
+INSERT INTO Objednavka
+VALUES(auto_num.nextval, 1010, '', 10000);
+INSERT INTO Faktura
+VALUES(auto_num.currval, 'prevodem');
+
 
 -- DOTAZY SELECT (3. ODEVZDANI)
+
+-- Vybira, za kolik penez se v objednavkach koupilo dane zbozi (Spojeni 2 tabulek).
+SELECT ID_ob_zb, cena
+FROM Objednavka INNER JOIN Faktura ON Faktura.ID_fak = Objednavka.ID_obj;
+
+-- Vybira, kolik utratil zakaznik se jmenem Pan Zakaznik (Spojeni 2 tabulek).
+SELECT jmeno, prijmeni, utrata
+FROM Osoba INNER JOIN Zakaznik ON Osoba.ID_osoby = Zakaznik.ID_zak
+WHERE jmeno = 'Pan' AND prijmeni = 'Zakaznik';
+
+-- Vybira, prijmeni zamestancu, kteri pracuji na ktere pokladne a zaroven jejichz pracovni pomer je DPP (Spojeni 3 tabulek).
+SELECT prijmeni, ID_pokl
+FROM Osoba INNER JOIN Zames ON Osoba.ID_osoby = Zames.ID_zam INNER JOIN Pokladna ON Osoba.ID_osoby = Pokladna.ID_oso
+WHERE prac_pom = 'DPP';
+
+-- Vybira pocet objednavek podle typu zbozi s cenou vyssi nez 10.000 (GROUP BY + AGREGACNI FUNKCE).
+SELECT typ, count(*) pocet_obj
+FROM Zbozi INNER JOIN Objednavka ON Zbozi.ID_zbozi = Objednavka.ID_ob_zb
+WHERE cena >= 10000
+GROUP BY typ;
+
+-- Vybira, kolik utratili zakaznici co kartu maji nebo nemaji (GROUP BY + AGREGACNI FUNKCE).
+SELECT zak_karta, sum(utrata)
+FROM Zakaznik
+GROUP BY zak_karta;
+
+-- Vybira zamestance, co maji zadany jak email, tak telefonni cislo (POUZITI OPERATORU EXISTS).
+SELECT jmeno, prijmeni
+FROM Osoba
+WHERE EXISTS(SELECT * FROM Zames WHERE Osoba.ID_osoby = Zames.ID_zam AND telefon IS NOT NULL AND email IS NOT NULL);
+
+-- Vybira, jaky typ zbozi dodavaji dodavatele, co jsou spolecnost s rucenim omezenym (POUZITI OPERATORU IN).
+SELECT dodav, typ
+FROM Zbozi
+WHERE ID_zbozi IN(SELECT ID_zbozi FROM Zbozi WHERE dodav LIKE '%s.r.o');
