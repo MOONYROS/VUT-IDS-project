@@ -11,6 +11,9 @@ DROP TABLE Osoba cascade constraints;
 DROP TABLE Faktura cascade constraints;
 DROP TABLE Zames cascade constraints;
 DROP TABLE Zakaznik cascade constraints;
+-- 4. ODEVZDANI
+DROP TABLE Nepovolena_objednavka_log cascade constraints;
+--DROP TRIGGER Povolena_objednavka;
 
 DROP SEQUENCE auto_num;
 
@@ -304,36 +307,110 @@ VALUES(auto_num.currval, 'prevodem');
 -- DOTAZY SELECT (3. ODEVZDANI)
 
 -- Vybira, za kolik penez se v objednavkach koupilo dane zbozi (Spojeni 2 tabulek).
-SELECT ID_ob_zb, cena
-FROM Objednavka INNER JOIN Faktura ON Faktura.ID_fak = Objednavka.ID_obj;
+-- SELECT ID_ob_zb, cena
+-- FROM Objednavka INNER JOIN Faktura ON Faktura.ID_fak = Objednavka.ID_obj;
+--
+-- -- Vybira, kolik utratil zakaznik se jmenem Pan Zakaznik (Spojeni 2 tabulek).
+-- SELECT jmeno, prijmeni, utrata
+-- FROM Osoba INNER JOIN Zakaznik ON Osoba.ID_osoby = Zakaznik.ID_zak
+-- WHERE jmeno = 'Pan' AND prijmeni = 'Zakaznik';
+--
+-- -- Vybira, prijmeni zamestancu, kteri pracuji na ktere pokladne a zaroven jejichz pracovni pomer je DPP (Spojeni 3 tabulek).
+-- SELECT prijmeni, ID_pokl
+-- FROM Osoba INNER JOIN Zames ON Osoba.ID_osoby = Zames.ID_zam INNER JOIN Pokladna ON Osoba.ID_osoby = Pokladna.ID_oso
+-- WHERE prac_pom = 'DPP';
+--
+-- -- Vybira pocet objednavek podle typu zbozi s cenou vyssi nez 10.000 (GROUP BY + AGREGACNI FUNKCE).
+-- SELECT typ, count(*) pocet_obj
+-- FROM Zbozi INNER JOIN Objednavka ON Zbozi.ID_zbozi = Objednavka.ID_ob_zb
+-- WHERE cena >= 10000
+-- GROUP BY typ;
+--
+-- -- Vybira, kolik utratili zakaznici co kartu maji nebo nemaji (GROUP BY + AGREGACNI FUNKCE).
+-- SELECT zak_karta, sum(utrata)
+-- FROM Zakaznik
+-- GROUP BY zak_karta;
+--
+-- -- Vybira zamestance, co maji zadany jak email, tak telefonni cislo (POUZITI OPERATORU EXISTS).
+-- SELECT jmeno, prijmeni
+-- FROM Osoba
+-- WHERE EXISTS(SELECT * FROM Zames WHERE Osoba.ID_osoby = Zames.ID_zam AND telefon IS NOT NULL AND email IS NOT NULL);
+--
+-- -- Vybira, jaky typ zbozi dodavaji dodavatele, co jsou spolecnost s rucenim omezenym (POUZITI OPERATORU IN).
+-- SELECT dodav, typ
+-- FROM Zbozi
+-- WHERE ID_zbozi IN(SELECT ID_zbozi FROM Zbozi WHERE dodav LIKE '%s.r.o');
 
--- Vybira, kolik utratil zakaznik se jmenem Pan Zakaznik (Spojeni 2 tabulek).
-SELECT jmeno, prijmeni, utrata
-FROM Osoba INNER JOIN Zakaznik ON Osoba.ID_osoby = Zakaznik.ID_zak
-WHERE jmeno = 'Pan' AND prijmeni = 'Zakaznik';
+-- 4. ODEVZDANI
+CREATE TABLE Nepovolena_objednavka_log (
+    ID_ob_oso NUMBER(10),
+    zprava VARCHAR2(50),
+    cena FLOAT(20)
+);
 
--- Vybira, prijmeni zamestancu, kteri pracuji na ktere pokladne a zaroven jejichz pracovni pomer je DPP (Spojeni 3 tabulek).
-SELECT prijmeni, ID_pokl
-FROM Osoba INNER JOIN Zames ON Osoba.ID_osoby = Zames.ID_zam INNER JOIN Pokladna ON Osoba.ID_osoby = Pokladna.ID_oso
-WHERE prac_pom = 'DPP';
+CREATE OR REPLACE TRIGGER Povolena_objednavka
+    AFTER INSERT ON Objednavka
+    FOR EACH ROW
+    WHEN (NEW.cena > 50000)
+DECLARE
+	cislo_osoby Objednavka.ID_ob_oso%TYPE := :NEW.ID_ob_oso;
+	castka Objednavka.cena%TYPE := :NEW.cena;
+	Nepovolena_objednavka EXCEPTION;
+BEGIN
+	IF cislo_osoby <> 2341 THEN
+		RAISE Nepovolena_objednavka;
+	END IF;
+EXCEPTION
+	WHEN Nepovolena_objednavka THEN
+		INSERT INTO Nepovolena_objednavka_log(ID_ob_oso, zprava, cena)
+		    VALUES (cislo_osoby, 'Pouze reditel muze vytvorit objednavku v hodnote:', castka);
+END;
+/
 
--- Vybira pocet objednavek podle typu zbozi s cenou vyssi nez 10.000 (GROUP BY + AGREGACNI FUNKCE).
-SELECT typ, count(*) pocet_obj
-FROM Zbozi INNER JOIN Objednavka ON Zbozi.ID_zbozi = Objednavka.ID_ob_zb
-WHERE cena >= 10000
-GROUP BY typ;
+INSERT INTO Objednavka
+VALUES(123456, 1007, 3386, 60000);
+INSERT INTO Faktura
+VALUES(123456, 'kartou');
 
--- Vybira, kolik utratili zakaznici co kartu maji nebo nemaji (GROUP BY + AGREGACNI FUNKCE).
-SELECT zak_karta, sum(utrata)
-FROM Zakaznik
-GROUP BY zak_karta;
+INSERT INTO Objednavka
+VALUES(123457, 1007, 2341, 80000);
+INSERT INTO Faktura
+VALUES(123457, 'kartou');
 
--- Vybira zamestance, co maji zadany jak email, tak telefonni cislo (POUZITI OPERATORU EXISTS).
-SELECT jmeno, prijmeni
-FROM Osoba
-WHERE EXISTS(SELECT * FROM Zames WHERE Osoba.ID_osoby = Zames.ID_zam AND telefon IS NOT NULL AND email IS NOT NULL);
+INSERT INTO Objednavka
+VALUES(123458, 1005, 3386, 10000);
+INSERT INTO Faktura
+VALUES(123458, 'kartou');
 
--- Vybira, jaky typ zbozi dodavaji dodavatele, co jsou spolecnost s rucenim omezenym (POUZITI OPERATORU IN).
-SELECT dodav, typ
-FROM Zbozi
-WHERE ID_zbozi IN(SELECT ID_zbozi FROM Zbozi WHERE dodav LIKE '%s.r.o');
+INSERT INTO Objednavka
+VALUES(123459, 1003, 2361, 100000);
+INSERT INTO Faktura
+VALUES(123459, 'kartou');
+
+SELECT * FROM Nepovolena_objednavka_log;
+
+-- TODO druhy trigger
+
+-- CREATE OR REPLACE PROCEDURE ZmenaPlatuPozice (
+-- 	p_pozice IN VARCHAR2(20),
+-- 	p_plat IN FLOAT(10)
+-- )
+-- AS
+-- BEGIN
+-- 	UPDATE Zames
+-- 	SET plat = p_plat
+-- 	WHERE pozice = p_pozice;
+-- 	COMMIT;
+-- END;
+--
+-- BEGIN
+-- 	ZmenaPlatuPozice(p_pozice => 'reditel', p_plat => 5001);
+-- END;
+
+CREATE OR REPLACE PROCEDURE prdel
+AS
+BEGIN
+	DBMS_OUTPUT.PUT_LINE('PRDEL!!!');
+END;
+
+CALL prdel();
