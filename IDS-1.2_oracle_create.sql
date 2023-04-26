@@ -339,6 +339,7 @@ VALUES(auto_num.currval, 'prevodem');
 -- WHERE ID_zbozi IN(SELECT ID_zbozi FROM Zbozi WHERE dodav LIKE '%s.r.o');
 
 -- 4. ODEVZDANI
+-- TRIGGER 1
 CREATE TABLE Nepovolena_objednavka_log (
     ID_ob_oso NUMBER(10),
     zprava VARCHAR2(50),
@@ -386,16 +387,80 @@ VALUES(123459, 'kartou');
 
 SELECT * FROM Nepovolena_objednavka_log;
 
--- TODO druhy trigger
+-- TRIGGER 2
+CREATE TABLE malo_kontaktu_log (
+    ID_osoby NUMBER(10),
+    zprava VARCHAR2(70)
+);
 
+CREATE OR REPLACE TRIGGER kontrola_kontaktu
+    BEFORE INSERT ON Zames
+    FOR EACH ROW
+DECLARE
+    t_email Osoba.email%TYPE;
+    t_telefon Zames.telefon%TYPE;
+    malo_kontaktu EXCEPTION;
+BEGIN
+    SELECT email INTO t_email
+    FROM Osoba
+    WHERE ID_osoby = :new.ID_zam;
+
+    t_telefon := :new.telefon;
+
+    IF t_email IS NULL AND t_telefon IS NULL THEN
+        RAISE malo_kontaktu;
+    END IF;
+
+EXCEPTION
+    WHEN malo_kontaktu THEN
+        INSERT INTO malo_kontaktu_log(ID_osoby, zprava)
+            VALUES (:new.ID_zam, 'Zamestnanec nema ani jeden z kontaktu. Je potreba alespon jeden.');
+END;
+/
+
+
+INSERT INTO Osoba
+VALUES (2362, 'Miluju', 'Triggery', '', '999999/9999');
+INSERT INTO Zames
+VALUES (8, 2362, 'skladnik', 38000, '', 'HPP');
+
+SELECT * FROM malo_kontaktu_log;
+
+-- CREATE OR REPLACE TRIGGER kontrola_kontaktu
+--     BEFORE INSERT OR UPDATE ON Zames
+-- DECLARE
+--     email Osoba.email%TYPE;
+--     tel_cislo Zames.telefon%TYPE;
+-- BEGIN
+--     IF inserting THEN
+--         email := :NEW.email;
+--         tel_cislo := :NEW.telefon;
+--     ELSE
+--         email := :OLD.email;
+--         tel_cislo := :OLD.telefon;
+--     END IF;
 --
+--     IF email IS NULL AND tel_cislo IS NULL THEN
+--         RAISE_APPLICATION_ERROR(-20001,
+--             'Zamestnanec nema ani jeden z kontkatu. Je potreba alespon jeden.');
+--     END IF;
+-- EXCEPTION
+--     WHEN OTHERS THEN
+--         INSERT INTO malo_kontaktu_log(zprava)
+--             VALUES ('Zamestnanec nema ani jeden z kontkatu. Je potreba alespon jeden.');
+--         RAISE;
+-- END;
+
+-- SELECT * FROM Osoba INNER JOIN Zames ON ID_osoby = ID_zam;
+
+-- PROCEDURA 1
 CREATE OR REPLACE PROCEDURE ZmenaPlatuPozice (
 	pozice IN VARCHAR2,
-	plat IN FLOAT
+	plat IN NUMBER
 )
 IS
 	p_pozice VARCHAR2(20);
-	p_plat FLOAT(10);
+	p_plat NUMBER(10, 0);
 BEGIN
     p_pozice := pozice;
     p_plat := plat;
@@ -406,8 +471,8 @@ BEGIN
 END;
 
 SELECT ID_zam, pozice, plat FROM Zames WHERE pozice = 'reditel'
-                                  OR pozice = 'pokladni'
-								  OR pozice = 'vedouci';
+										  OR pozice = 'pokladni'
+										  OR pozice = 'vedouci';
 
 BEGIN
 	ZmenaPlatuPozice('reditel', 5001);
@@ -422,8 +487,85 @@ BEGIN
 END;
 
 SELECT ID_zam, pozice, plat FROM Zames WHERE pozice = 'reditel'
-                                  OR pozice = 'pokladni'
-								  OR pozice = 'vedouci';
--- TODO DRUHA PROCEDURA
+										  OR pozice = 'pokladni'
+										  OR pozice = 'vedouci';
+
+-- TODO PROCEDURA 2 (+ kurzor)
+-- CREATE OR REPLACE PROCEDURE zmen_dodav(
+--     p_old_dodav IN VARCHAR2,
+--     p_new_dodav IN VARCHAR2
+-- )
+-- IS
+--     v_old_dodav VARCHAR2(20) := p_old_dodav;
+--     v_new_dodav VARCHAR2(20) := p_new_dodav;
+--     CURSOR c_zbozi IS
+--         SELECT *
+--         FROM Zbozi
+--         WHERE dodav = v_old_dodav;
+--
+--     v_zbozi Zbozi%ROWTYPE;
+-- BEGIN
+--     OPEN c_zbozi;
+--
+--     LOOP
+--         FETCH c_zbozi INTO v_zbozi;
+--
+--         EXIT WHEN c_zbozi%NOTFOUND;
+--
+--         UPDATE Zbozi
+--         SET dodav = v_new_dodav
+--         WHERE CURRENT OF c_zbozi;
+--     END LOOP;
+--
+--     CLOSE c_zbozi;
+--
+--     COMMIT;
+-- END;
+-- /
+--
+-- BEGIN
+-- 	zmen_dodav('Rumovar s.r.o', 'UZ MORE FUNGUJ');
+-- END;
+
+-- Nas pokus oo rozfungovani indexu
+EXPLAIN PLAN FOR
+    SELECT jmeno, prijmeni FROM Osoba;
+SELECT *
+FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+CREATE INDEX nas_index ON Osoba (jmeno, prijmeni, ID_osoby);
+
+EXPLAIN PLAN FOR
+    SELECT jmeno, prijmeni FROM Osoba;
+SELECT *
+FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+DROP INDEX nas_index;
 
 
+-- EXPLAIN PLAN prakticke pouziti
+-- Spocitame cenu vsech objednavek podle zpusobu platby
+-- Chceme zjistit, jestli ma smysl setrit penize na zavedeni levnejsich samoobsluznych pokladen (pouze placeni kartou)
+-- nebo jestli utratit vice penez za pokladny, ktere prijimaji hotovost.
+SELECT zpus_plat, sum(cena)
+FROM Objednavka INNER JOIN Faktura ON ID_obj = ID_fak
+GROUP BY zpus_plat;
+
+EXPLAIN PLAN FOR
+	SELECT zpus_plat, sum(cena)
+	FROM Objednavka INNER JOIN Faktura ON ID_obj = ID_fak
+	GROUP BY zpus_plat;
+SELECT *
+FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+
+CREATE INDEX ind_zpus ON Faktura (ID_fak, zpus_plat);
+
+EXPLAIN PLAN FOR
+	SELECT zpus_plat, sum(cena)
+	FROM Objednavka INNER JOIN Faktura ON ID_obj = ID_fak
+	GROUP BY zpus_plat;
+SELECT *
+FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+DROP INDEX ind_zpus;
