@@ -1,8 +1,4 @@
 -- VYPRACOVALI: xlukas15 a xmorku03
--- od prvniho odevzdani se lehce pozmenil ER diagram
--- chteli jsme ho dat do odevzdani, ale je podporovan pouze jeden soubor
--- dali jsme ho tedy na nase studentske stranky:
--- http://www.stud.fit.vutbr.cz/~xlukas15/
 
 DROP TABLE Pokladna cascade constraints;
 DROP TABLE Zbozi cascade constraints;
@@ -11,9 +7,10 @@ DROP TABLE Osoba cascade constraints;
 DROP TABLE Faktura cascade constraints;
 DROP TABLE Zames cascade constraints;
 DROP TABLE Zakaznik cascade constraints;
+
 -- 4. ODEVZDANI
 DROP TABLE Nepovolena_objednavka_log cascade constraints;
---DROP TRIGGER Povolena_objednavka;
+
 
 DROP SEQUENCE auto_num;
 
@@ -60,7 +57,7 @@ CREATE TABLE Zames (
     ID_zames NUMBER(10, 0),
 	ID_zam NUMBER(10, 0),
 	pozice VARCHAR2(20),
-	plat FLOAT(10),
+	plat NUMBER(10, 0),
 	telefon NUMBER(9, 0),
 	prac_pom VARCHAR2(20));
 
@@ -163,10 +160,10 @@ INSERT INTO Zames
 VALUES(0004,2371, 'pokladni', 25000, '', 'HPP');
 
 INSERT INTO Zames
-VALUES(0005, 2372, 'pokladni', 25000, 999888555, 'DPP');
+VALUES(0005, 2372, 'pokladni', 20000, 999888555, 'DPP');
 
 INSERT INTO Zames
-VALUES(0006, 2373, 'pokladni', 25000, 111111111, 'DPP');
+VALUES(0006, 2373, 'pokladni', 22000, 111111111, 'DPP');
 
 INSERT INTO Zames
 VALUES(0007, 2374, 'spravce_site', 17300, '', 'HPP');
@@ -391,26 +388,42 @@ SELECT * FROM Nepovolena_objednavka_log;
 
 -- TODO druhy trigger
 
--- CREATE OR REPLACE PROCEDURE ZmenaPlatuPozice (
--- 	p_pozice IN VARCHAR2(20),
--- 	p_plat IN FLOAT(10)
--- )
--- AS
--- BEGIN
--- 	UPDATE Zames
--- 	SET plat = p_plat
--- 	WHERE pozice = p_pozice;
--- 	COMMIT;
--- END;
 --
--- BEGIN
--- 	ZmenaPlatuPozice(p_pozice => 'reditel', p_plat => 5001);
--- END;
-
-CREATE OR REPLACE PROCEDURE prdel
-AS
+CREATE OR REPLACE PROCEDURE ZmenaPlatuPozice (
+	pozice IN VARCHAR2,
+	plat IN FLOAT
+)
+IS
+	p_pozice VARCHAR2(20);
+	p_plat FLOAT(10);
 BEGIN
-	DBMS_OUTPUT.PUT_LINE('PRDEL!!!');
+    p_pozice := pozice;
+    p_plat := plat;
+	UPDATE Zames
+	SET plat = plat + p_plat
+	WHERE pozice = p_pozice;
+	COMMIT;
 END;
 
-CALL prdel();
+SELECT ID_zam, pozice, plat FROM Zames WHERE pozice = 'reditel'
+                                  OR pozice = 'pokladni'
+								  OR pozice = 'vedouci';
+
+BEGIN
+	ZmenaPlatuPozice('reditel', 5001);
+END;
+
+BEGIN
+	ZmenaPlatuPozice('pokladni', 1002);
+END;
+
+BEGIN
+	ZmenaPlatuPozice('vedouci', -999);
+END;
+
+SELECT ID_zam, pozice, plat FROM Zames WHERE pozice = 'reditel'
+                                  OR pozice = 'pokladni'
+								  OR pozice = 'vedouci';
+-- TODO DRUHA PROCEDURA
+
+
