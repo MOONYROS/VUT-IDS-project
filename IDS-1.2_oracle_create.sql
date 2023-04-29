@@ -590,12 +590,25 @@ GROUP BY typ,
     END;
 
 -- pripadne vymenit GRANT za REVOKE
-GRANT ALL ON Osoba TO XMORKU03;
-GRANT ALL ON Zakaznik TO XMORKU03;
-GRANT ALL ON Zames TO XMORKU03;
-GRANT ALL ON Pokladna TO XMORKU03;
-GRANT ALL ON Zbozi TO XMORKU03;
-GRANT ALL ON Objednavka TO XMORKU03;
-GRANT ALL ON Faktura TO XMORKU03;
-GRANT ALL ON malo_kontaktu_log TO XMORKU03;
-GRANT ALL ON Nepovolena_objednavka_log TO XMORKU03;
+GRANT ALL ON Osoba TO xmorku03;
+GRANT ALL ON Zakaznik TO xmorku03;
+GRANT ALL ON Zames TO xmorku03;
+GRANT ALL ON Pokladna TO xmorku03;
+GRANT ALL ON Zbozi TO xmorku03;
+GRANT ALL ON Objednavka TO xmorku03;
+GRANT ALL ON Faktura TO xmorku03;
+GRANT ALL ON malo_kontaktu_log TO xmorku03;
+GRANT ALL ON Nepovolena_objednavka_log TO xmorku03;
+
+CREATE MATERIALIZED VIEW vybrat_neco
+BUILD IMMEDIATE
+REFRESH
+ON COMMIT
+AS
+SELECT *
+FROM XLUKAS15.ZBOZI;
+
+DROP MATERIALIZED VIEW vybrat_neco;
+
+SELECT typ, dodav
+FROM vybrat_neco;
