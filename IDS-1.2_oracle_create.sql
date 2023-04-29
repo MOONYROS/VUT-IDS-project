@@ -10,7 +10,7 @@ DROP TABLE Zakaznik cascade constraints;
 
 -- 4. ODEVZDANI
 DROP TABLE Nepovolena_objednavka_log cascade constraints;
-
+DROP TABLE malo_kontaktu_log cascade constraints;
 
 DROP SEQUENCE auto_num;
 
@@ -35,7 +35,7 @@ CREATE TABLE Zbozi (
 	ID_zbozi NUMBER(10, 0) NOT NULL,
 	ID_po_pr NUMBER(10, 0),
 	typ VARCHAR2(20),
-	dodav VARCHAR2(20));
+	dodav VARCHAR2(50));
 
 
 /
@@ -300,6 +300,30 @@ VALUES(auto_num.nextval, 1010, '', 10000);
 INSERT INTO Faktura
 VALUES(auto_num.currval, 'prevodem');
 
+INSERT INTO Objednavka
+VALUES(auto_num.nextval, 1003, 2351, 40000);
+INSERT INTO Faktura
+VALUES(auto_num.currval, 'prevodem');
+
+INSERT INTO Objednavka
+VALUES(auto_num.nextval, 1006, 2351, 60000);
+INSERT INTO Faktura
+VALUES(auto_num.currval, 'kartou');
+
+INSERT INTO Objednavka
+VALUES(auto_num.nextval, 1006, 2351, 35000);
+INSERT INTO Faktura
+VALUES(auto_num.currval, 'kartou');
+
+INSERT INTO Objednavka
+VALUES(auto_num.nextval, 1006, 2341, 5000);
+INSERT INTO Faktura
+VALUES(auto_num.currval, 'kartou');
+
+INSERT INTO Objednavka
+VALUES(auto_num.nextval, 1006, 2341, 13000);
+INSERT INTO Faktura
+VALUES(auto_num.currval, 'hotove');
 
 -- DOTAZY SELECT (3. ODEVZDANI)
 
@@ -426,33 +450,6 @@ VALUES (8, 2362, 'skladnik', 38000, '', 'HPP');
 
 SELECT * FROM malo_kontaktu_log;
 
--- CREATE OR REPLACE TRIGGER kontrola_kontaktu
---     BEFORE INSERT OR UPDATE ON Zames
--- DECLARE
---     email Osoba.email%TYPE;
---     tel_cislo Zames.telefon%TYPE;
--- BEGIN
---     IF inserting THEN
---         email := :NEW.email;
---         tel_cislo := :NEW.telefon;
---     ELSE
---         email := :OLD.email;
---         tel_cislo := :OLD.telefon;
---     END IF;
---
---     IF email IS NULL AND tel_cislo IS NULL THEN
---         RAISE_APPLICATION_ERROR(-20001,
---             'Zamestnanec nema ani jeden z kontkatu. Je potreba alespon jeden.');
---     END IF;
--- EXCEPTION
---     WHEN OTHERS THEN
---         INSERT INTO malo_kontaktu_log(zprava)
---             VALUES ('Zamestnanec nema ani jeden z kontkatu. Je potreba alespon jeden.');
---         RAISE;
--- END;
-
--- SELECT * FROM Osoba INNER JOIN Zames ON ID_osoby = ID_zam;
-
 -- PROCEDURA 1
 CREATE OR REPLACE PROCEDURE ZmenaPlatuPozice (
 	pozice IN VARCHAR2,
@@ -491,59 +488,48 @@ SELECT ID_zam, pozice, plat FROM Zames WHERE pozice = 'reditel'
 										  OR pozice = 'vedouci';
 
 -- TODO PROCEDURA 2 (+ kurzor)
--- CREATE OR REPLACE PROCEDURE zmen_dodav(
---     p_old_dodav IN VARCHAR2,
---     p_new_dodav IN VARCHAR2
--- )
--- IS
---     v_old_dodav VARCHAR2(20) := p_old_dodav;
---     v_new_dodav VARCHAR2(20) := p_new_dodav;
---     CURSOR c_zbozi IS
---         SELECT *
---         FROM Zbozi
---         WHERE dodav = v_old_dodav;
---
---     v_zbozi Zbozi%ROWTYPE;
--- BEGIN
---     OPEN c_zbozi;
---
---     LOOP
---         FETCH c_zbozi INTO v_zbozi;
---
---         EXIT WHEN c_zbozi%NOTFOUND;
---
---         UPDATE Zbozi
---         SET dodav = v_new_dodav
---         WHERE CURRENT OF c_zbozi;
---     END LOOP;
---
---     CLOSE c_zbozi;
---
---     COMMIT;
--- END;
--- /
---
--- BEGIN
--- 	zmen_dodav('Rumovar s.r.o', 'UZ MORE FUNGUJ');
--- END;
+CREATE OR REPLACE PROCEDURE zmen_dodav(
+    p_old_dodav VARCHAR2,
+    p_new_dodav VARCHAR2
+)
+IS
+    v_old_dodav VARCHAR2(50) := p_old_dodav;
+    v_new_dodav VARCHAR2(50) := p_new_dodav;
+    CURSOR c_zbozi IS
+        SELECT *
+        FROM Zbozi
+        WHERE dodav = v_old_dodav
+        FOR UPDATE;
 
--- Nas pokus oo rozfungovani indexu
-EXPLAIN PLAN FOR
-    SELECT jmeno, prijmeni FROM Osoba;
-SELECT *
-FROM TABLE(DBMS_XPLAN.DISPLAY);
+    v_zbozi Zbozi%ROWTYPE;
+BEGIN
+    OPEN c_zbozi;
+    LOOP
+        FETCH c_zbozi INTO v_zbozi;
 
-CREATE INDEX nas_index ON Osoba (jmeno, prijmeni, ID_osoby);
+        EXIT WHEN c_zbozi%NOTFOUND;
 
-EXPLAIN PLAN FOR
-    SELECT jmeno, prijmeni FROM Osoba;
-SELECT *
-FROM TABLE(DBMS_XPLAN.DISPLAY);
+        UPDATE Zbozi
+        SET dodav = v_new_dodav
+        WHERE CURRENT OF c_zbozi;
+    END LOOP;
 
-DROP INDEX nas_index;
+    CLOSE c_zbozi;
+
+    COMMIT;
+END;
+/
+
+SELECT dodav FROM Zbozi;
+
+BEGIN
+    zmen_dodav('Rumovar s.r.o', 'Rumovarna u modreho stromu s.r.o');
+end;
+
+SELECT dodav FROM Zbozi;
 
 
--- EXPLAIN PLAN prakticke pouziti
+-- EXPLAIN PLAN (prakticke pouziti)
 -- Spocitame cenu vsech objednavek podle zpusobu platby
 -- Chceme zjistit, jestli ma smysl setrit penize na zavedeni levnejsich samoobsluznych pokladen (pouze placeni kartou)
 -- nebo jestli utratit vice penez za pokladny, ktere prijimaji hotovost.
@@ -569,3 +555,36 @@ SELECT *
 FROM TABLE(DBMS_XPLAN.DISPLAY);
 
 DROP INDEX ind_zpus;
+
+-- KOMPLEXNI SELECT
+-- Dotaz ukazuje, kolik se objednalo ktereho typu zbozi za urcitou cenu, pricemz musel
+-- objednavku vytvorit zamestnanec.
+-- nejdrive si predvytvorime tabulku spojujici Zbozi a Obejdnavku
+WITH objednane_zbozi AS (
+    SELECT ID_ob_oso, ID_obj, typ, cena
+    FROM Zbozi INNER JOIN Objednavka ON Zbozi.ID_zbozi = Objednavka.ID_ob_zb
+)
+-- Spocitame si pocet objednavek urciteho typu zbozi podle cenove kategorie.
+-- Objednavku MUSEL vytvorit zamestnanec (tedy ne automat nebo zakaznik)
+SELECT typ, count(ID_obj) AS pocet_obj_zbozi,
+	CASE
+	    WHEN cena < 25000
+	        THEN 'Do 25000 Kc'
+		WHEN cena >= 25000 AND cena < 50000
+	    	THEN 'Od 25000 do 50000 Kc'
+	    WHEN cena >= 50000
+	    	THEN 'Za 50000 Kc a vice'
+    END AS cenova_kategorie
+-- Dotaz spojime s predvytvorenou tabulkou, na kterou jsme pouzili WITH
+FROM Osoba INNER JOIN Zames ON Osoba.ID_osoby = Zames.ID_zam
+		   INNER JOIN objednane_zbozi ON objednane_zbozi.ID_ob_oso = Osoba.ID_osoby
+-- Nakonec seradime podle typu zbozi
+GROUP BY typ,
+    CASE
+        WHEN cena < 25000
+            THEN 'Do 25000 Kc'
+        WHEN cena >= 25000 AND cena < 50000
+            THEN 'Od 25000 do 50000 Kc'
+        WHEN cena >= 50000
+            THEN 'Za 50000 Kc a vice'
+    END;
