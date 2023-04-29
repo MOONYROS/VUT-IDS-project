@@ -599,6 +599,7 @@ GRANT ALL ON Objednavka TO xmorku03;
 GRANT ALL ON Faktura TO xmorku03;
 GRANT ALL ON malo_kontaktu_log TO xmorku03;
 GRANT ALL ON Nepovolena_objednavka_log TO xmorku03;
+GRANT ALL ON vybrat_neco TO xmorku03;
 
 CREATE MATERIALIZED VIEW vybrat_neco
 BUILD IMMEDIATE
