@@ -1,4 +1,4 @@
-# VUT-IDS-project
+# VUT-IDS-project (2022/2023)
 
 Goal of this project was to learn how to create a database with `Oracle SQL`. Creating tables, SELECT commands, Procedures, Triggers, etc.
 
