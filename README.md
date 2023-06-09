@@ -19,6 +19,14 @@ The whole project was divided into 4 subtasks:
 3. Create at least 7 `SELECT` commands that will use your data and also use various closures like `GROUP BY`, predicates like `EXISTS` or `IN` and comment, what your SELECTS do. (max 5 points)
 4. Create complex `SQL` script that will use *indexes*, `EXPLAIN PLAN`, SELECTS with `WITH` and `CASE` operators, also create `MATERIALIZED VIEW` for your colleague, etc. (max 19 points)
 
+## How to use
+
+If you would like to run this project, make sure you use `ORACLE SQL`, otherwise the project will not work. If you use correct database, then the **main script** (`xlukas15_xmorku03.sql`) should run instantly without any issues. If not, then check if you don't already have the same tables in your database.
+
+The file `data.sql` was used to create various demo data, that were later added into the **main script**, so it does not need to be used.
+
+Note that all the comments are written in Czech language only.
+
 ## Final evaluation
 
 1. 3/5 (corrected later)
